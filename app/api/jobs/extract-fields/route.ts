@@ -31,12 +31,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Extracting job fields with AI from pasted content")
 
-    let model = "groq/llama-3.3-70b-versatile"
-
-    // Check if GROQ_API_KEY is available, otherwise try OpenAI
-    if (!process.env.GROQ_API_KEY) {
-      model = "openai/gpt-4o-mini"
-    }
+    const model = "anthropic/claude-3-5-sonnet-20241022"
 
     const { object: jobData } = await generateObject({
       model,
@@ -70,7 +65,8 @@ Be accurate and extract only information that is clearly stated. Format the desc
   } catch (error: any) {
     console.error("[v0] Error extracting job fields:", error)
 
-    let errorMessage = error.message
+    let errorMessage = error.message || "Failed to extract job data"
+
     if (error.message?.includes("credit card") || error.message?.includes("AI Gateway")) {
       errorMessage =
         "AI Gateway requires a credit card or AI integration. Please add Groq (free) from Settings > Integrations."

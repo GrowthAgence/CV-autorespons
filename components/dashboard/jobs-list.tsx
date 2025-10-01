@@ -20,6 +20,16 @@ export function JobsList({ jobs }: JobsListProps) {
   const router = useRouter()
   const [deletingJobId, setDeletingJobId] = useState<string | null>(null)
 
+  console.log(
+    "[v0] Jobs data:",
+    jobs.map((j) => ({
+      id: j.id,
+      title: j.title,
+      application_date: j.application_date,
+      hasApplicationDate: !!j.application_date,
+    })),
+  )
+
   const handleDelete = async (jobId: string) => {
     if (!confirm("Are you sure you want to delete this job? This will also delete any associated applications.")) {
       return
@@ -140,9 +150,20 @@ export function JobsList({ jobs }: JobsListProps) {
                   <BrutalButton variant="outline" size="sm" asChild>
                     <Link href={`/dashboard/jobs/${job.id}`}>VIEW</Link>
                   </BrutalButton>
-                  <BrutalButton size="sm" asChild>
-                    <Link href={`/dashboard/jobs/${job.id}/apply`}>APPLY</Link>
-                  </BrutalButton>
+                  {console.log("[v0] Rendering button for job:", job.id, "application_date:", job.application_date)}
+                  {job.application_date ? (
+                    <BrutalButton
+                      size="sm"
+                      asChild
+                      className="border-green-600 bg-green-600 text-white hover:bg-green-700"
+                    >
+                      <Link href={`/dashboard/jobs/${job.id}/apply`}>APPLIED ✓</Link>
+                    </BrutalButton>
+                  ) : (
+                    <BrutalButton size="sm" asChild>
+                      <Link href={`/dashboard/jobs/${job.id}/apply`}>APPLY</Link>
+                    </BrutalButton>
+                  )}
                 </div>
               </div>
             </BrutalCardContent>

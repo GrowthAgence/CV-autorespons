@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { BrutalButton } from "@/components/ui/brutal-button"
@@ -47,6 +49,9 @@ export default function OnboardingPage() {
     certifications: [],
   })
   const [cvText, setCvText] = useState("")
+  const [uploadMethod, setUploadMethod] = useState<"text" | "pdf">("pdf")
+  const [isDragging, setIsDragging] = useState(false)
+  const [uploadedFileName, setUploadedFileName] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isExtracting, setIsExtracting] = useState(false)
   const [dataExtracted, setDataExtracted] = useState(false)
@@ -96,6 +101,65 @@ export default function OnboardingPage() {
         setErrors((prev) => ({ ...prev, phone: "Please enter a valid phone number" }))
       }
     }
+  }
+
+  const handlePDFUpload = async (file: File) => {
+    if (!file.type.includes("pdf")) {
+      setErrors({ cv: "Please upload a PDF file" })
+      return
+    }
+
+    setIsExtracting(true)
+    setErrors({})
+    setUploadedFileName(file.name)
+
+    try {
+      console.log("[v0] Processing PDF file:", file.name)
+
+      // Use unpdf to extract text from PDF
+      const { extractText } = await import("unpdf")
+      const arrayBuffer = await file.arrayBuffer()
+      const { text } = await extractText(new Uint8Array(arrayBuffer), { mergePages: true })
+
+      console.log("[v0] Extracted text from PDF:", text.substring(0, 200) + "...")
+
+      if (!text || text.trim().length < 50) {
+        throw new Error("Could not extract enough text from PDF. Please try copying and pasting the text instead.")
+      }
+
+      await extractCVData(text)
+    } catch (error: any) {
+      console.error("[v0] PDF extraction error:", error)
+      setErrors({ cv: error.message || "Failed to extract PDF data. Please try copying and pasting the text instead." })
+      setUploadedFileName("")
+    } finally {
+      setIsExtracting(false)
+    }
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      handlePDFUpload(file)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) {
+      handlePDFUpload(file)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = () => {
+    setIsDragging(false)
   }
 
   const handleTextExtraction = async () => {
@@ -364,32 +428,102 @@ export default function OnboardingPage() {
                         <polyline points="10 9 9 9 8 9" />
                       </svg>
                     </div>
-                    <h3 className="mb-2 text-2xl font-bold uppercase">Drop Your CV Here</h3>
+                    <h3 className="mb-2 text-2xl font-bold uppercase">Upload Your CV</h3>
                     <p className="text-muted-foreground">
                       Our AI will automatically extract your contact info, experience, education, skills, and more
                     </p>
                   </div>
 
                   <div className="border-4 border-black bg-gradient-to-br from-cyan-100 to-blue-100 p-6 shadow-[6px_6px_0px_#000000]">
-                    <textarea
-                      className="min-h-[200px] w-full resize-none border-4 border-black bg-white px-4 py-3 font-medium shadow-[4px_4px_0px_rgba(0,0,0,0.1)] focus:outline-none focus:ring-4 focus:ring-purple-500"
-                      value={cvText}
-                      onChange={(e) => setCvText(e.target.value)}
-                      placeholder="Copy and paste your CV text here... (from PDF, Word, or any document)"
-                      disabled={isExtracting}
-                    />
-                    <BrutalButton
-                      onClick={handleTextExtraction}
-                      disabled={isExtracting || !cvText || cvText.trim().length < 50}
-                      className="mt-4 w-full border-4 border-black bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-[4px_4px_0px_#000000] hover:from-purple-600 hover:to-pink-600"
-                    >
-                      {isExtracting ? "EXTRACTING..." : "🚀 EXTRACT MY INFO"}
-                    </BrutalButton>
-                    <div className="mt-4 border-4 border-black bg-yellow-300 p-3 shadow-[4px_4px_0px_#000000]">
-                      <p className="text-sm font-bold text-black">
-                        💡 Tip: Open your PDF, select all (Ctrl+A / Cmd+A), copy, and paste here
-                      </p>
-                    </div>
+                    {uploadMethod === "pdf" ? (
+                      <div className="space-y-4">
+                        <div
+                          onDrop={handleDrop}
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          className={`relative min-h-[300px] cursor-pointer border-4 border-dashed ${
+                            isDragging ? "border-purple-500 bg-purple-50" : "border-black bg-white"
+                          } p-8 shadow-[4px_4px_0px_rgba(0,0,0,0.1)] transition-colors hover:bg-gray-50`}
+                        >
+                          <input
+                            type="file"
+                            accept=".pdf"
+                            onChange={handleFileChange}
+                            disabled={isExtracting}
+                            className="absolute inset-0 cursor-pointer opacity-0"
+                            id="pdf-upload"
+                          />
+                          <label
+                            htmlFor="pdf-upload"
+                            className="flex h-full cursor-pointer flex-col items-center justify-center"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="mb-4 h-16 w-16 text-purple-500"
+                            >
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                              <polyline points="17 8 12 3 7 8" />
+                              <line x1="12" y1="3" x2="12" y2="15" />
+                            </svg>
+                            <p className="mb-2 text-lg font-bold uppercase">
+                              {uploadedFileName || "Drop your PDF here or click to browse"}
+                            </p>
+                            <p className="text-sm text-muted-foreground">Supports PDF files up to 10MB</p>
+                          </label>
+                        </div>
+                        <div className="border-4 border-black bg-yellow-300 p-3 shadow-[4px_4px_0px_#000000]">
+                          <p className="text-sm font-bold text-black">
+                            💡 Tip: Drag and drop your CV PDF file or click to select from your computer
+                          </p>
+                        </div>
+
+                        <div className="pt-2 text-center">
+                          <button
+                            onClick={() => setUploadMethod("text")}
+                            className="text-sm font-medium text-muted-foreground underline hover:text-foreground"
+                          >
+                            Or paste text instead
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <textarea
+                          className="min-h-[300px] w-full resize-none border-4 border-black bg-white px-4 py-3 font-medium shadow-[4px_4px_0px_rgba(0,0,0,0.1)] focus:outline-none focus:ring-4 focus:ring-purple-500"
+                          value={cvText}
+                          onChange={(e) => setCvText(e.target.value)}
+                          placeholder="Copy and paste your CV text here... (from PDF, Word, or any document)"
+                          disabled={isExtracting}
+                        />
+                        <BrutalButton
+                          onClick={handleTextExtraction}
+                          disabled={isExtracting || !cvText || cvText.trim().length < 50}
+                          className="w-full border-4 border-black bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-[4px_4px_0px_#000000] hover:from-purple-600 hover:to-pink-600"
+                        >
+                          {isExtracting ? "EXTRACTING..." : "🚀 EXTRACT MY INFO"}
+                        </BrutalButton>
+                        <div className="border-4 border-black bg-yellow-300 p-3 shadow-[4px_4px_0px_#000000]">
+                          <p className="text-sm font-bold text-black">
+                            💡 Tip: Open your PDF, select all (Ctrl+A / Cmd+A), copy, and paste here
+                          </p>
+                        </div>
+
+                        <div className="pt-2 text-center">
+                          <button
+                            onClick={() => setUploadMethod("pdf")}
+                            className="text-sm font-medium text-muted-foreground underline hover:text-foreground"
+                          >
+                            ← Back to PDF upload
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {isExtracting && (

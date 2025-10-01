@@ -12,6 +12,7 @@
     "@ai-sdk/anthropic": "latest",
     "@ai-sdk/groq": "latest",
     "@hookform/resolvers": "^3.10.0",
+    "@napi-rs/canvas": "latest",
     "@neondatabase/serverless": "latest",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
@@ -68,6 +69,7 @@
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
+    "unpdf": "latest",
     "vaul": "^0.9.9",
     "window": "4.2.7",
     "zod": "3.25.67"
