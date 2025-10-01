@@ -175,6 +175,8 @@ export default function AddJobPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    console.log("[v0] Form submitted with data:", formData)
+
     const newErrors: Record<string, string> = {}
 
     if (!formData.title) newErrors.title = "Job title is required"
@@ -189,10 +191,12 @@ export default function AddJobPage() {
     }
 
     if (Object.keys(newErrors).length > 0) {
+      console.log("[v0] Validation errors:", newErrors)
       setErrors(newErrors)
       return
     }
 
+    console.log("[v0] Validation passed, saving job...")
     setIsLoading(true)
 
     try {
@@ -202,11 +206,21 @@ export default function AddJobPage() {
         body: JSON.stringify(formData),
       })
 
-      if (!response.ok) throw new Error("Failed to create job")
+      console.log("[v0] API response status:", response.status)
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error("[v0] API error:", errorData)
+        throw new Error("Failed to create job")
+      }
+
+      const result = await response.json()
+      console.log("[v0] Job created successfully:", result)
 
       router.push("/dashboard")
     } catch (error) {
-      console.error("Job creation error:", error)
+      console.error("[v0] Job creation error:", error)
+      alert("Failed to save job. Please try again.")
     } finally {
       setIsLoading(false)
     }
