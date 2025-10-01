@@ -51,7 +51,7 @@ export default async function DashboardPage() {
       <main className="mx-auto max-w-7xl px-4 py-8">
         <div className="mb-8">
           <h1 className="mb-2 text-3xl font-bold uppercase tracking-tight md:text-4xl">
-            Welcome back, {user.full_name}
+            Welcome back, {user.first_name}
           </h1>
           <p className="text-muted-foreground">Manage your job applications and let AI do the heavy lifting</p>
         </div>
