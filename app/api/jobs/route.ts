@@ -4,11 +4,15 @@ import { sql } from "@/lib/database"
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("[v0] Job creation request received")
     const user = await getCurrentUser()
+
     if (!user) {
-      console.log("[v0] Unauthorized job creation attempt")
+      console.log("[v0] Unauthorized job creation attempt - no user found")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    console.log("[v0] User authenticated:", user.email, "ID:", user.id)
 
     const body = await request.json()
     console.log("[v0] Creating job for user:", user.id, "with data:", body)

@@ -10,7 +10,10 @@ export async function getCurrentUser(): Promise<Profile | null> {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session_id")?.value
 
+    console.log("[v0] Checking session, session_id:", sessionId)
+
     if (!sessionId) {
+      console.log("[v0] No session_id cookie found")
       return null
     }
 
@@ -22,9 +25,15 @@ export async function getCurrentUser(): Promise<Profile | null> {
       LIMIT 1
     `
 
+    console.log("[v0] User lookup result:", result.length > 0 ? "User found" : "User not found")
+
+    if (result.length > 0) {
+      console.log("[v0] User email:", result[0].email)
+    }
+
     return (result[0] as Profile) || null
   } catch (error) {
-    console.error("Error getting current user:", error)
+    console.error("[v0] Error getting current user:", error)
     return null
   }
 }
