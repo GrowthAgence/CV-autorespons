@@ -1,11 +1,41 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getCurrentUser } from "@/lib/auth"
 import { sql } from "@/lib/database"
+import type { Profile } from "@/lib/database"
+
+async function getUserFromRequest(request: NextRequest): Promise<Profile | null> {
+  try {
+    const sessionId = request.cookies.get("session_id")?.value
+
+    console.log("[v0] Checking session from request, session_id:", sessionId)
+
+    if (!sessionId) {
+      console.log("[v0] No session_id cookie found in request")
+      return null
+    }
+
+    const result = await sql`
+      SELECT * FROM profiles 
+      WHERE email = ${sessionId}
+      LIMIT 1
+    `
+
+    console.log("[v0] User lookup result:", result.length > 0 ? "User found" : "User not found")
+
+    if (result.length > 0) {
+      console.log("[v0] User email:", result[0].email, "ID:", result[0].id)
+    }
+
+    return (result[0] as Profile) || null
+  } catch (error) {
+    console.error("[v0] Error getting user from request:", error)
+    return null
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
     console.log("[v0] Job creation request received")
-    const user = await getCurrentUser()
+    const user = await getUserFromRequest(request)
 
     if (!user) {
       console.log("[v0] Unauthorized job creation attempt - no user found")
@@ -60,7 +90,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser()
+    const user = await getUserFromRequest(request)
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
