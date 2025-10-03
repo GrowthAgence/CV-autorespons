@@ -15,28 +15,38 @@ export async function POST(request: NextRequest) {
     console.log("[v0] User authenticated:", user.email, "ID:", user.id)
 
     const body = await request.json()
-    console.log("[v0] Creating job for user:", user.id, "with data:", body)
+    console.log("[v0] Request body:", JSON.stringify(body, null, 2))
+    console.log("[v0] Creating job for user:", user.id)
 
-    const jobPost = await sql`
-      INSERT INTO job_posts (
-        id, user_id, title, company, location, job_type, salary_range,
-        description, requirements, benefits, application_url, source_url,
-        deadline, status, created_at, updated_at
-      )
-      VALUES (
-        gen_random_uuid(), ${user.id}, ${body.title}, ${body.company}, ${body.location},
-        ${body.jobType}, ${body.salaryRange}, ${body.description},
-        ${body.requirements}, ${body.benefits}, ${body.applicationUrl},
-        ${body.sourceUrl}, ${body.deadline ? new Date(body.deadline) : null}, 'active',
-        now(), now()
-      )
-      RETURNING *
-    `
+    try {
+      const jobPost = await sql`
+        INSERT INTO job_posts (
+          id, user_id, title, company, location, job_type, salary_range,
+          description, requirements, benefits, application_url, source_url,
+          deadline, status, created_at, updated_at
+        )
+        VALUES (
+          gen_random_uuid(), ${user.id}, ${body.title}, ${body.company}, ${body.location || null},
+          ${body.jobType || null}, ${body.salaryRange || null}, ${body.description},
+          ${body.requirements || null}, ${body.benefits || null}, ${body.applicationUrl || null},
+          ${body.sourceUrl || null}, ${body.deadline ? new Date(body.deadline) : null}, 'active',
+          now(), now()
+        )
+        RETURNING *
+      `
 
-    console.log("[v0] Job created successfully:", jobPost[0])
-    return NextResponse.json({ success: true, job: jobPost[0] })
+      console.log("[v0] Job created successfully:", jobPost[0].id)
+      return NextResponse.json({ success: true, job: jobPost[0] })
+    } catch (dbError) {
+      console.error("[v0] Database error:", dbError)
+      console.error("[v0] Error name:", dbError instanceof Error ? dbError.name : "Unknown")
+      console.error("[v0] Error message:", dbError instanceof Error ? dbError.message : String(dbError))
+      console.error("[v0] Error stack:", dbError instanceof Error ? dbError.stack : "No stack")
+      throw dbError
+    }
   } catch (error) {
     console.error("[v0] Job creation error:", error)
+    console.error("[v0] Error type:", typeof error)
     console.error("[v0] Error details:", error instanceof Error ? error.message : String(error))
     return NextResponse.json(
       {
